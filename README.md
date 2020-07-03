@@ -1,6 +1,6 @@
-# Comment on PR via GitHub Action
+# Comment on GitHub
 
-A GitHub action to comment on the relevant open PR when a commit is pushed.
+A GitHub action to comment on matching PR or commit.
 
 ## Usage
 
@@ -11,18 +11,14 @@ A GitHub action to comment on the relevant open PR when a commit is pushed.
 ### Sample workflow
 
 ```yaml
-name: comment-on-pr example
-on: pull_request
+on: push
 jobs:
   example:
-    name: sample comment
     runs-on: ubuntu-latest
     steps:
-      - name: comment PR
-        uses: unsplash/comment-on-pr@master
+      - uses: daohoangson/action-comment-on-github@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           msg: "Check out this message!"
-          check_for_duplicate_msg: false  # OPTIONAL 
 ```
