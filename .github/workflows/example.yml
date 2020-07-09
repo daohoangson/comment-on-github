@@ -21,4 +21,4 @@ jobs:
         with:
           body: "${{ matrix.os }} OK"
           fingerprint: <!-- ${{ github.sha }} -->
-      - run: echo outputs.url=${{ steps.comment.outputs.url }}
+      - run: echo action=${{ steps.comment.outputs.action }}, target=${{ steps.comment.outputs.target }}, url=${{ steps.comment.outputs.url }}

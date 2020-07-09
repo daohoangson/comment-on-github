@@ -12,8 +12,12 @@ inputs:
     description: The text that will be appended to `body` and used to auto-merge comments
     required: false
 outputs:
+  action:
+    description: Whether the comment has been `created` or `updated`
+  target:
+    description: Whether the comment has been made in a `commit` or `issue`
   url:
-    description: The created / updated comment URL
+    description: The comment URL
 runs:
   using: node12
   main: dist/index.js

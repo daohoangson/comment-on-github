@@ -2491,7 +2491,11 @@ function _comment(body, token, options = {}) {
                                 ['comment_id']: comment.id,
                                 body: `${comment.body}\n\n${body}`
                             })
-                                .then(({ data: { url } }) => url);
+                                .then(({ data: { url } }) => ({
+                                action: 'updated',
+                                target: 'issue',
+                                url
+                            }));
                         }
                         else {
                             core_1.debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`);
@@ -2515,7 +2519,7 @@ function _comment(body, token, options = {}) {
                 ['issue_number']: issueNumber,
                 body: (fingerprint ? `${fingerprint}\n\n` : '') + body
             })
-                .then(({ data: { url } }) => url);
+                .then(({ data: { url } }) => ({ action: 'created', target: 'issue', url }));
         }
         if (fingerprint) {
             let page = 1;
@@ -2538,7 +2542,11 @@ function _comment(body, token, options = {}) {
                             ['comment_id']: comment.id,
                             body: `${comment.body}\n\n${body}`
                         })
-                            .then(({ data: { url } }) => url);
+                            .then(({ data: { url } }) => ({
+                            action: 'updated',
+                            target: 'commit',
+                            url
+                        }));
                     }
                     else {
                         core_1.debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`);
@@ -2562,7 +2570,7 @@ function _comment(body, token, options = {}) {
             ['commit_sha']: github_1.context.sha,
             body: (fingerprint ? `${fingerprint}\n\n` : '') + body
         })
-            .then(({ data: { url } }) => url);
+            .then(({ data: { url } }) => ({ action: 'created', target: 'commit', url }));
     });
 }
 function run() {
@@ -2579,7 +2587,11 @@ function run() {
         }
         yield _comment(body, token, {
             fingerprint: core_1.getInput('fingerprint')
-        }).then(url => core_1.setOutput('url', url), error => core_1.setFailed(error));
+        }).then(({ action, target, url }) => {
+            core_1.setOutput('action', action);
+            core_1.setOutput('target', target);
+            core_1.setOutput('url', url);
+        }, error => core_1.setFailed(error));
     });
 }
 run();

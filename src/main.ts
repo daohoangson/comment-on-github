@@ -6,7 +6,11 @@ async function _comment(
   body: string,
   token: string,
   options: {fingerprint?: string} = {}
-): Promise<string> {
+): Promise<{
+  action: 'created' | 'updated'
+  target: 'commit' | 'issue'
+  url: string
+}> {
   const {owner, repo} = context.repo
   const {fingerprint} = options
   let issueNumber = 0
@@ -76,7 +80,11 @@ async function _comment(
                 ['comment_id']: comment.id,
                 body: `${comment.body}\n\n${body}`
               })
-              .then(({data: {url}}) => url)
+              .then(({data: {url}}) => ({
+                action: 'updated',
+                target: 'issue',
+                url
+              }))
           } else {
             debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`)
           }
@@ -100,7 +108,7 @@ async function _comment(
         ['issue_number']: issueNumber,
         body: (fingerprint ? `${fingerprint}\n\n` : '') + body
       })
-      .then(({data: {url}}) => url)
+      .then(({data: {url}}) => ({action: 'created', target: 'issue', url}))
   }
 
   if (fingerprint) {
@@ -124,7 +132,11 @@ async function _comment(
               ['comment_id']: comment.id,
               body: `${comment.body}\n\n${body}`
             })
-            .then(({data: {url}}) => url)
+            .then(({data: {url}}) => ({
+              action: 'updated',
+              target: 'commit',
+              url
+            }))
         } else {
           debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`)
         }
@@ -148,7 +160,7 @@ async function _comment(
       ['commit_sha']: context.sha,
       body: (fingerprint ? `${fingerprint}\n\n` : '') + body
     })
-    .then(({data: {url}}) => url)
+    .then(({data: {url}}) => ({action: 'created', target: 'commit', url}))
 }
 
 async function run(): Promise<void> {
@@ -167,7 +179,11 @@ async function run(): Promise<void> {
   await _comment(body, token, {
     fingerprint: getInput('fingerprint')
   }).then(
-    url => setOutput('url', url),
+    ({action, target, url}) => {
+      setOutput('action', action)
+      setOutput('target', target)
+      setOutput('url', url)
+    },
     error => setFailed(error)
   )
 }
