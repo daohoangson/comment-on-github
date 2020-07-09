@@ -2437,25 +2437,32 @@ function _comment(body, token, options = {}) {
                 break;
             }
             case 'push': {
-                const pulls = yield octokit.pulls.list({ owner, repo, state: 'open' });
                 const pushPayload = github_1.context.payload;
-                pulls.data
-                    .filter(pull => pull.head.sha === pushPayload.after)
-                    .map(pull => (issueNumber = pull.id));
-                core_1.debug(`issueNumber=${issueNumber} from WebhookPayloadPush`);
+                core_1.debug('pulls.list(state=open)...');
+                const pulls = yield octokit.pulls.list({ owner, repo, state: 'open' });
+                for (const pull of pulls.data) {
+                    if (pull.head.sha === pushPayload.after) {
+                        issueNumber = pull.id;
+                        core_1.debug(`issueNumber=${issueNumber} from WebhookPayloadPush (url=${pull.url})`);
+                    }
+                    else {
+                        core_1.debug(`Ignoring pull: id=${pull.id}, url=${pull.url}`);
+                    }
+                }
                 break;
             }
         }
         if (issueNumber > 0) {
             if (fingerprint) {
-                const comments = yield octokit.pulls.list({
+                core_1.debug(`issues.listComments(issue_number=${issueNumber})...`);
+                const comments = yield octokit.issues.listComments({
                     owner,
                     repo,
                     ['issue_number']: issueNumber
                 });
                 for (const comment of comments.data) {
                     if (comment.body.startsWith(fingerprint)) {
-                        core_1.debug(`comment id=${comment.id}: updating`);
+                        core_1.debug(`issues.updateComment(comment_id=${comment.id})...`);
                         return octokit.issues
                             .updateComment({
                             owner,
@@ -2466,11 +2473,11 @@ function _comment(body, token, options = {}) {
                             .then(({ data: { url } }) => url);
                     }
                     else {
-                        core_1.debug(`comment id=${comment.id}: ignoring`);
+                        core_1.debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`);
                     }
                 }
             }
-            core_1.debug('createComment...');
+            core_1.debug(`issues.createComment(issue_number=${issueNumber})...`);
             return octokit.issues
                 .createComment({
                 owner,
@@ -2481,6 +2488,7 @@ function _comment(body, token, options = {}) {
                 .then(({ data: { url } }) => url);
         }
         if (fingerprint) {
+            core_1.debug(`repos.listCommentsForCommit(commit_sha=${github_1.context.sha})...`);
             const comments = yield octokit.repos.listCommentsForCommit({
                 owner,
                 repo,
@@ -2488,7 +2496,7 @@ function _comment(body, token, options = {}) {
             });
             for (const comment of comments.data) {
                 if (comment.body.startsWith(fingerprint)) {
-                    core_1.debug(`comment id=${comment.id}: updating`);
+                    core_1.debug(`repos.updateCommitComment(comment_id=${comment.id})...`);
                     return octokit.repos
                         .updateCommitComment({
                         owner,
@@ -2499,11 +2507,11 @@ function _comment(body, token, options = {}) {
                         .then(({ data: { url } }) => url);
                 }
                 else {
-                    core_1.debug(`comment id=${comment.id}: ignoring`);
+                    core_1.debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`);
                 }
             }
         }
-        core_1.debug('createCommitComment...');
+        core_1.debug(`repos.createCommitComment(commit_sha=${github_1.context.sha})...`);
         return octokit.repos
             .createCommitComment({
             owner,

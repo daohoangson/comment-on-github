@@ -20,26 +20,36 @@ async function _comment(
       break
     }
     case 'push': {
-      const pulls = await octokit.pulls.list({owner, repo, state: 'open'})
       const pushPayload = context.payload as Webhooks.WebhookPayloadPush
-      pulls.data
-        .filter(pull => pull.head.sha === pushPayload.after)
-        .map(pull => (issueNumber = pull.id))
-      debug(`issueNumber=${issueNumber} from WebhookPayloadPush`)
+
+      debug('pulls.list(state=open)...')
+      const pulls = await octokit.pulls.list({owner, repo, state: 'open'})
+
+      for (const pull of pulls.data) {
+        if (pull.head.sha === pushPayload.after) {
+          issueNumber = pull.id
+          debug(
+            `issueNumber=${issueNumber} from WebhookPayloadPush (url=${pull.url})`
+          )
+        } else {
+          debug(`Ignoring pull: id=${pull.id}, url=${pull.url}`)
+        }
+      }
       break
     }
   }
 
   if (issueNumber > 0) {
     if (fingerprint) {
-      const comments = await octokit.pulls.list({
+      debug(`issues.listComments(issue_number=${issueNumber})...`)
+      const comments = await octokit.issues.listComments({
         owner,
         repo,
         ['issue_number']: issueNumber
       })
       for (const comment of comments.data) {
         if (comment.body.startsWith(fingerprint)) {
-          debug(`comment id=${comment.id}: updating`)
+          debug(`issues.updateComment(comment_id=${comment.id})...`)
           return octokit.issues
             .updateComment({
               owner,
@@ -49,12 +59,12 @@ async function _comment(
             })
             .then(({data: {url}}) => url)
         } else {
-          debug(`comment id=${comment.id}: ignoring`)
+          debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`)
         }
       }
     }
 
-    debug('createComment...')
+    debug(`issues.createComment(issue_number=${issueNumber})...`)
     return octokit.issues
       .createComment({
         owner,
@@ -66,6 +76,7 @@ async function _comment(
   }
 
   if (fingerprint) {
+    debug(`repos.listCommentsForCommit(commit_sha=${context.sha})...`)
     const comments = await octokit.repos.listCommentsForCommit({
       owner,
       repo,
@@ -73,7 +84,7 @@ async function _comment(
     })
     for (const comment of comments.data) {
       if (comment.body.startsWith(fingerprint)) {
-        debug(`comment id=${comment.id}: updating`)
+        debug(`repos.updateCommitComment(comment_id=${comment.id})...`)
         return octokit.repos
           .updateCommitComment({
             owner,
@@ -83,12 +94,12 @@ async function _comment(
           })
           .then(({data: {url}}) => url)
       } else {
-        debug(`comment id=${comment.id}: ignoring`)
+        debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`)
       }
     }
   }
 
-  debug('createCommitComment...')
+  debug(`repos.createCommitComment(commit_sha=${context.sha})...`)
   return octokit.repos
     .createCommitComment({
       owner,
