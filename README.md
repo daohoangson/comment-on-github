@@ -1,12 +1,13 @@
 # Comment on GitHub
 
-A GitHub action to comment on matching PR or commit.
+An Action to comment on the relevant GitHub PR / comment on push.
 This is a fork of https://github.com/unsplash/comment-on-pr.
 
 ## Usage
 
+- Runs on Ubuntu, macOS and Windows virtual environments.
 - Requires the `GITHUB_TOKEN` secret.
-- Requires the comment's message in the `msg` parameter.
+- Requires the comment's body in the `body` parameter.
 - Supports `push` and `pull_request` event types.
 
 ### Sample workflow
