@@ -1,19 +1,64 @@
-import * as core from '@actions/core'
-import {wait} from './wait'
+import {getInput, setFailed, setOutput} from '@actions/core'
+import {context, getOctokit} from '@actions/github'
+import Webhooks from '@octokit/webhooks'
+
+async function _comment(body: string, token: string): Promise<string> {
+  const {owner, repo} = context.repo
+  let issueNumber = 0
+
+  const octokit = getOctokit(token)
+  switch (context.eventName) {
+    case 'pull_request':
+      issueNumber = context.issue.number
+      break
+    case 'push': {
+      const pulls = await octokit.pulls.list({owner, repo, state: 'open'})
+      const payload = context.payload as Webhooks.WebhookPayloadPush
+      pulls.data
+        .filter(pull => pull.head.sha === payload.after)
+        .map(pull => (issueNumber = pull.id))
+      break
+    }
+  }
+
+  if (issueNumber > 0) {
+    return octokit.issues
+      .createComment({
+        owner,
+        repo,
+        ['issue_number']: context.issue.number,
+        body
+      })
+      .then(({data: {url}}) => url)
+  }
+
+  return octokit.repos
+    .createCommitComment({
+      owner,
+      repo,
+      ['commit_sha']: context.sha,
+      body
+    })
+    .then(({data: {url}}) => url)
+}
 
 async function run(): Promise<void> {
-  try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`)
-
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
-
-    core.setOutput('time', new Date().toTimeString())
-  } catch (error) {
-    core.setFailed(error.message)
+  const body: string = getInput('body').trim()
+  if (!body) {
+    setFailed('Input `body` is required')
+    return
   }
+
+  const token: string | undefined = process.env['GITHUB_TOKEN']
+  if (!token) {
+    setFailed('Env var `GITHUB_TOKEN` is required')
+    return
+  }
+
+  await _comment(body, token).then(
+    commentUrl => setOutput('commentUrl', commentUrl),
+    error => setFailed(error)
+  )
 }
 
 run()

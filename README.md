@@ -21,5 +21,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          message: "Check out this message!"
+          body: "Check out this comment!"
 ```

@@ -24,7 +24,9 @@
   "author": "Dao Hoang Son <dao@hoangson.vn>",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.2.0"
+    "@actions/core": "^1.2.0",
+    "@actions/github": "^4.0.0",
+    "@octokit/webhooks": "^7.6.4"
   },
   "devDependencies": {
     "@types/node": "^12.7.12",
