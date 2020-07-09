@@ -2430,25 +2430,28 @@ function _comment(body, token, options = {}) {
         let issueNumber = 0;
         const octokit = github_1.getOctokit(token);
         switch (github_1.context.eventName) {
-            case 'pull_request':
-                issueNumber = github_1.context.issue.number;
+            case 'pull_request': {
+                const prPayload = github_1.context.payload;
+                issueNumber = prPayload.number;
+                core_1.debug(`issueNumber=${issueNumber} from WebhookPayloadPullRequest`);
                 break;
+            }
             case 'push': {
                 const pulls = yield octokit.pulls.list({ owner, repo, state: 'open' });
-                const payload = github_1.context.payload;
+                const pushPayload = github_1.context.payload;
                 pulls.data
-                    .filter(pull => pull.head.sha === payload.after)
+                    .filter(pull => pull.head.sha === pushPayload.after)
                     .map(pull => (issueNumber = pull.id));
+                core_1.debug(`issueNumber=${issueNumber} from WebhookPayloadPush`);
                 break;
             }
         }
-        core_1.debug(`issueNumber=${issueNumber}`);
         if (issueNumber > 0) {
             if (fingerprint) {
-                const comments = yield octokit.issues.listComments({
+                const comments = yield octokit.pulls.list({
                     owner,
                     repo,
-                    ['issue_number']: github_1.context.issue.number
+                    ['issue_number']: issueNumber
                 });
                 for (const comment of comments.data) {
                     if (comment.body.startsWith(fingerprint)) {
@@ -2472,7 +2475,7 @@ function _comment(body, token, options = {}) {
                 .createComment({
                 owner,
                 repo,
-                ['issue_number']: github_1.context.issue.number,
+                ['issue_number']: issueNumber,
                 body: `${fingerprint ? fingerprint : ''}${body}`
             })
                 .then(({ data: { url } }) => url);

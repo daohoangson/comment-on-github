@@ -13,27 +13,29 @@ async function _comment(
 
   const octokit = getOctokit(token)
   switch (context.eventName) {
-    case 'pull_request':
-      issueNumber = context.issue.number
+    case 'pull_request': {
+      const prPayload = context.payload as Webhooks.WebhookPayloadPullRequest
+      issueNumber = prPayload.number
+      debug(`issueNumber=${issueNumber} from WebhookPayloadPullRequest`)
       break
+    }
     case 'push': {
       const pulls = await octokit.pulls.list({owner, repo, state: 'open'})
-      const payload = context.payload as Webhooks.WebhookPayloadPush
+      const pushPayload = context.payload as Webhooks.WebhookPayloadPush
       pulls.data
-        .filter(pull => pull.head.sha === payload.after)
+        .filter(pull => pull.head.sha === pushPayload.after)
         .map(pull => (issueNumber = pull.id))
+      debug(`issueNumber=${issueNumber} from WebhookPayloadPush`)
       break
     }
   }
 
-  debug(`issueNumber=${issueNumber}`)
-
   if (issueNumber > 0) {
     if (fingerprint) {
-      const comments = await octokit.issues.listComments({
+      const comments = await octokit.pulls.list({
         owner,
         repo,
-        ['issue_number']: context.issue.number
+        ['issue_number']: issueNumber
       })
       for (const comment of comments.data) {
         if (comment.body.startsWith(fingerprint)) {
@@ -57,7 +59,7 @@ async function _comment(
       .createComment({
         owner,
         repo,
-        ['issue_number']: context.issue.number,
+        ['issue_number']: issueNumber,
         body: `${fingerprint ? fingerprint : ''}${body}`
       })
       .then(({data: {url}}) => url)
