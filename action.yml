@@ -5,11 +5,9 @@ branding:
   icon: 'message-square'  
   color: 'blue'
 inputs:
-  msg: 
+  message: 
     description: Comment's message
     required: true
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  args:
-    - ${{ inputs.msg }}
+  using: 'node12'
+  main: 'index.js'
