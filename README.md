@@ -17,9 +17,9 @@ jobs:
   example:
     runs-on: ubuntu-latest
     steps:
-      - uses: daohoangson/comment-on-github@master
+      - uses: daohoangson/comment-on-github@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          msg: "Check out this message!"
+          message: "Check out this message!"
 ```
