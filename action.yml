@@ -2,14 +2,22 @@ name: Comment on GitHub
 author: Dao Hoang Son <dao@hoangson.vn>
 description: Leaves a comment on matching PR or commit.
 branding:
-  icon: 'message-square'  
-  color: 'blue'
+  icon: message-square
+  color: blue
 inputs:
-  msg: 
-    description: Comment's message
+  body: 
+    description: Comment body
     required: true
+  fingerprint:
+    description: The text that will be appended to `body` and used to auto-merge comments
+    required: false
+outputs:
+  action:
+    description: Whether the comment has been `created` or `updated`
+  target:
+    description: Whether the comment has been made in a `commit` or `issue`
+  url:
+    description: The comment URL
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  args:
-    - ${{ inputs.msg }}
+  using: node12
+  main: dist/index.js
