@@ -2442,6 +2442,7 @@ function _comment(body, token, options = {}) {
                 break;
             }
         }
+        core_1.debug(`issueNumber=${issueNumber}`);
         if (issueNumber > 0) {
             if (fingerprint) {
                 const comments = yield octokit.issues.listComments({
@@ -2451,6 +2452,7 @@ function _comment(body, token, options = {}) {
                 });
                 for (const comment of comments.data) {
                     if (comment.body.startsWith(fingerprint)) {
+                        core_1.debug(`comment id=${comment.id}: updating`);
                         return octokit.issues
                             .updateComment({
                             owner,
@@ -2460,8 +2462,12 @@ function _comment(body, token, options = {}) {
                         })
                             .then(({ data: { url } }) => url);
                     }
+                    else {
+                        core_1.debug(`comment id=${comment.id}: ignoring`);
+                    }
                 }
             }
+            core_1.debug('createComment...');
             return octokit.issues
                 .createComment({
                 owner,
@@ -2479,6 +2485,7 @@ function _comment(body, token, options = {}) {
             });
             for (const comment of comments.data) {
                 if (comment.body.startsWith(fingerprint)) {
+                    core_1.debug(`comment id=${comment.id}: updating`);
                     return octokit.repos
                         .updateCommitComment({
                         owner,
@@ -2488,8 +2495,12 @@ function _comment(body, token, options = {}) {
                     })
                         .then(({ data: { url } }) => url);
                 }
+                else {
+                    core_1.debug(`comment id=${comment.id}: ignoring`);
+                }
             }
         }
+        core_1.debug('createCommitComment...');
         return octokit.repos
             .createCommitComment({
             owner,

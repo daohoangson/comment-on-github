@@ -1,4 +1,4 @@
-import {getInput, setFailed, setOutput} from '@actions/core'
+import {debug, getInput, setFailed, setOutput} from '@actions/core'
 import {context, getOctokit} from '@actions/github'
 import Webhooks from '@octokit/webhooks'
 
@@ -26,6 +26,8 @@ async function _comment(
     }
   }
 
+  debug(`issueNumber=${issueNumber}`)
+
   if (issueNumber > 0) {
     if (fingerprint) {
       const comments = await octokit.issues.listComments({
@@ -35,6 +37,7 @@ async function _comment(
       })
       for (const comment of comments.data) {
         if (comment.body.startsWith(fingerprint)) {
+          debug(`comment id=${comment.id}: updating`)
           return octokit.issues
             .updateComment({
               owner,
@@ -43,10 +46,13 @@ async function _comment(
               body: `${comment.body}\n\n${body}`
             })
             .then(({data: {url}}) => url)
+        } else {
+          debug(`comment id=${comment.id}: ignoring`)
         }
       }
     }
 
+    debug('createComment...')
     return octokit.issues
       .createComment({
         owner,
@@ -65,6 +71,7 @@ async function _comment(
     })
     for (const comment of comments.data) {
       if (comment.body.startsWith(fingerprint)) {
+        debug(`comment id=${comment.id}: updating`)
         return octokit.repos
           .updateCommitComment({
             owner,
@@ -73,10 +80,13 @@ async function _comment(
             body: `${comment.body}\n\n${body}`
           })
           .then(({data: {url}}) => url)
+      } else {
+        debug(`comment id=${comment.id}: ignoring`)
       }
     }
   }
 
+  debug('createCommitComment...')
   return octokit.repos
     .createCommitComment({
       owner,
