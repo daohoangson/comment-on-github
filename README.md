@@ -22,4 +22,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body: "Check out this comment!"
+          fingerprint: <!-- ${{ github.sha }} --> # optional, will be appended to `body` and used to auto-merge comments
 ```

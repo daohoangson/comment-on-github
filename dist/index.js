@@ -2423,9 +2423,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = __webpack_require__(470);
 const github_1 = __webpack_require__(469);
-function _comment(body, token) {
+function _comment(body, token, options = {}) {
     return __awaiter(this, void 0, void 0, function* () {
         const { owner, repo } = github_1.context.repo;
+        const { fingerprint } = options;
         let issueNumber = 0;
         const octokit = github_1.getOctokit(token);
         switch (github_1.context.eventName) {
@@ -2442,21 +2443,59 @@ function _comment(body, token) {
             }
         }
         if (issueNumber > 0) {
+            if (fingerprint) {
+                const comments = yield octokit.issues.listComments({
+                    owner,
+                    repo,
+                    ['issue_number']: github_1.context.issue.number
+                });
+                for (const comment of comments.data) {
+                    if (comment.body.startsWith(fingerprint)) {
+                        return octokit.issues
+                            .updateComment({
+                            owner,
+                            repo,
+                            ['comment_id']: comment.id,
+                            body: `${comment.body}\n\n${body}`
+                        })
+                            .then(({ data: { url } }) => url);
+                    }
+                }
+            }
             return octokit.issues
                 .createComment({
                 owner,
                 repo,
                 ['issue_number']: github_1.context.issue.number,
-                body
+                body: `${fingerprint ? fingerprint : ''}${body}`
             })
                 .then(({ data: { url } }) => url);
+        }
+        if (fingerprint) {
+            const comments = yield octokit.repos.listCommentsForCommit({
+                owner,
+                repo,
+                ['commit_sha']: github_1.context.sha
+            });
+            for (const comment of comments.data) {
+                if (comment.body.startsWith(fingerprint)) {
+                    return octokit.repos
+                        .updateCommitComment({
+                        owner,
+                        repo,
+                        ['comment_id']: comment.id,
+                        body: `${comment.body}\n\n${body}`
+                    })
+                        .then(({ data: { url } }) => url);
+                }
+            }
         }
         return octokit.repos
             .createCommitComment({
             owner,
             repo,
             ['commit_sha']: github_1.context.sha,
-            body
+            body: `${fingerprint ? fingerprint : ''}${body}`
         })
             .then(({ data: { url } }) => url);
     });
@@ -2473,7 +2512,9 @@ function run() {
             core_1.setFailed('Env var `GITHUB_TOKEN` is required');
             return;
         }
-        yield _comment(body, token).then(commentUrl => core_1.setOutput('commentUrl', commentUrl), error => core_1.setFailed(error));
+        yield _comment(body, token, {
+            fingerprint: core_1.getInput('fingerprint'),
+        }).then(commentUrl => core_1.setOutput('commentUrl', commentUrl), error => core_1.setFailed(error));
     });
 }
 run();

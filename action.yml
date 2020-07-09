@@ -8,6 +8,9 @@ inputs:
   body: 
     description: Comment body
     required: true
+  fingerprint:
+    description: The text that will be appended to `body` and used to auto-merge comments
+    required: false
 runs:
   using: node12
   main: dist/index.js

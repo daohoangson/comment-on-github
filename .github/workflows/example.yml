@@ -19,3 +19,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body: "${{ matrix.os }} OK"
+          fingerprint: <!-- ${{ github.sha }} -->
