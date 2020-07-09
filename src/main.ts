@@ -98,7 +98,7 @@ async function _comment(
         owner,
         repo,
         ['issue_number']: issueNumber,
-        body: `${fingerprint ? fingerprint : ''}${body}`
+        body: (fingerprint ? `${fingerprint}\n\n` : '') + body
       })
       .then(({data: {url}}) => url)
   }
@@ -146,7 +146,7 @@ async function _comment(
       owner,
       repo,
       ['commit_sha']: context.sha,
-      body: `${fingerprint ? fingerprint : ''}${body}`
+      body: (fingerprint ? `${fingerprint}\n\n` : '') + body
     })
     .then(({data: {url}}) => url)
 }

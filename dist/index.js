@@ -2513,7 +2513,7 @@ function _comment(body, token, options = {}) {
                 owner,
                 repo,
                 ['issue_number']: issueNumber,
-                body: `${fingerprint ? fingerprint : ''}${body}`
+                body: (fingerprint ? `${fingerprint}\n\n` : '') + body
             })
                 .then(({ data: { url } }) => url);
         }
@@ -2560,7 +2560,7 @@ function _comment(body, token, options = {}) {
             owner,
             repo,
             ['commit_sha']: github_1.context.sha,
-            body: `${fingerprint ? fingerprint : ''}${body}`
+            body: (fingerprint ? `${fingerprint}\n\n` : '') + body
         })
             .then(({ data: { url } }) => url);
     });
