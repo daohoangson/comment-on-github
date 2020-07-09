@@ -2,12 +2,12 @@ name: Comment on GitHub
 author: Dao Hoang Son <dao@hoangson.vn>
 description: Leaves a comment on matching PR or commit.
 branding:
-  icon: 'message-square'  
-  color: 'blue'
+  icon: message-square
+  color: blue
 inputs:
-  message: 
-    description: Comment's message
+  body: 
+    description: Comment body
     required: true
 runs:
-  using: 'node12'
-  main: 'index.js'
+  using: node12
+  main: dist/index.js
