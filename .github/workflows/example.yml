@@ -14,9 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Test on ${{ matrix.os }}
+        id: comment
         uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body: "${{ matrix.os }} OK"
           fingerprint: <!-- ${{ github.sha }} -->
+      - run: echo outputs.url=${{ steps.comment.outputs.url }}

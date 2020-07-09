@@ -103,7 +103,7 @@ async function run(): Promise<void> {
   await _comment(body, token, {
     fingerprint: getInput('fingerprint')
   }).then(
-    commentUrl => setOutput('commentUrl', commentUrl),
+    url => setOutput('url', url),
     error => setFailed(error)
   )
 }

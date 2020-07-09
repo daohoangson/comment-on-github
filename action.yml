@@ -11,6 +11,9 @@ inputs:
   fingerprint:
     description: The text that will be appended to `body` and used to auto-merge comments
     required: false
+outputs:
+  url:
+    description: The created / updated comment URL
 runs:
   using: node12
   main: dist/index.js

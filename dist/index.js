@@ -2513,8 +2513,8 @@ function run() {
             return;
         }
         yield _comment(body, token, {
-            fingerprint: core_1.getInput('fingerprint'),
-        }).then(commentUrl => core_1.setOutput('commentUrl', commentUrl), error => core_1.setFailed(error));
+            fingerprint: core_1.getInput('fingerprint')
+        }).then(url => core_1.setOutput('url', url), error => core_1.setFailed(error));
     });
 }
 run();
