@@ -1,6 +1,7 @@
 # Comment on GitHub
 
 A GitHub action to comment on matching PR or commit.
+This is a fork of https://github.com/unsplash/comment-on-pr.
 
 ## Usage
 
@@ -16,7 +17,7 @@ jobs:
   example:
     runs-on: ubuntu-latest
     steps:
-      - uses: daohoangson/action-comment-on-github@master
+      - uses: daohoangson/comment-on-github@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
