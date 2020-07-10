@@ -300,6 +300,135 @@ module.exports._enoent = enoent;
 
 /***/ }),
 
+/***/ 28:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const core_1 = __webpack_require__(470);
+const github_1 = __webpack_require__(469);
+const _ = (body, token, opts) => {
+    const { fingerprint } = opts;
+    const octokit = github_1.getOctokit(token);
+    const { owner, repo } = github_1.context.repo;
+    const { sha } = github_1.context;
+    return {
+        appendCommitComment: (comment) => __awaiter(void 0, void 0, void 0, function* () {
+            core_1.debug(`repos.updateCommitComment(comment_id=${comment.id})`);
+            const { data } = yield octokit.repos.updateCommitComment({
+                owner,
+                repo,
+                ['comment_id']: comment.id,
+                body: `${comment.body}\n\n${body}`
+            });
+            return data;
+        }),
+        appendPullComment: (comment) => __awaiter(void 0, void 0, void 0, function* () {
+            core_1.debug(`issues.updateComment(comment_id=${comment.id})`);
+            const { data } = yield octokit.issues.updateComment({
+                owner,
+                repo,
+                ['comment_id']: comment.id,
+                body: `${comment.body}\n\n${body}`
+            });
+            return data;
+        }),
+        createCommitComment: () => __awaiter(void 0, void 0, void 0, function* () {
+            core_1.debug(`repos.createCommitComment(commit_sha=${sha})`);
+            const { data } = yield octokit.repos.createCommitComment({
+                owner,
+                repo,
+                ['commit_sha']: sha,
+                body: (fingerprint ? `${fingerprint}\n\n` : '') + body
+            });
+            return data;
+        }),
+        createPullComment: (pullNumber) => __awaiter(void 0, void 0, void 0, function* () {
+            core_1.debug(`issues.createComment(issue_number=${pullNumber})`);
+            const { data } = yield octokit.issues.createComment({
+                owner,
+                repo,
+                ['issue_number']: pullNumber,
+                body: (fingerprint ? `${fingerprint}\n\n` : '') + body
+            });
+            return data;
+        }),
+        getCommitCommentByPrefix: () => __awaiter(void 0, void 0, void 0, function* () {
+            if (!fingerprint)
+                return;
+            const options = octokit.repos.listCommentsForCommit.endpoint.merge({
+                owner,
+                repo,
+                ['commit_sha']: sha
+            });
+            core_1.debug(`repos.listCommentsForCommit(commit_sha=${sha})`);
+            const comments = yield octokit.paginate(options);
+            for (const comment of comments) {
+                if (comment.body.startsWith(fingerprint)) {
+                    core_1.debug(`Found commit comment ${comment.url}`);
+                    return comment;
+                }
+                else {
+                    core_1.debug(`Ignoring commit comment ${comment.url}`);
+                }
+            }
+        }),
+        getPullNumberByAfter: (after) => __awaiter(void 0, void 0, void 0, function* () {
+            const options = octokit.pulls.list.endpoint.merge({
+                owner,
+                repo,
+                state: 'open'
+            });
+            core_1.debug(`pulls.list(state=open)`);
+            const pulls = yield octokit.paginate(options);
+            for (const pull of pulls) {
+                if (pull.head.sha === after) {
+                    core_1.debug(`Found pull ${pull.url}`);
+                    return pull.number;
+                }
+                else {
+                    core_1.debug(`Ignoring pull ${pull.url}`);
+                }
+            }
+            return 0;
+        }),
+        getPullCommentByPrefix: (pullNumber) => __awaiter(void 0, void 0, void 0, function* () {
+            if (!fingerprint)
+                return;
+            const options = octokit.issues.listComments.endpoint.merge({
+                owner,
+                repo,
+                ['issue_number']: pullNumber
+            });
+            core_1.debug(`issues.listComments(issue_number=${pullNumber})`);
+            const comments = yield octokit.paginate(options);
+            for (const comment of comments) {
+                if (comment.body.startsWith(fingerprint)) {
+                    core_1.debug(`Found pull comment ${comment.url}`);
+                    return comment;
+                }
+                else {
+                    core_1.debug(`Ignoring pull comment ${comment.url}`);
+                }
+            }
+        })
+    };
+};
+exports.default = _;
+
+
+/***/ }),
+
 /***/ 39:
 /***/ (function(module) {
 
@@ -2420,157 +2549,47 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = __webpack_require__(470);
 const github_1 = __webpack_require__(469);
-function _comment(body, token, options = {}) {
+const octokit_1 = __importDefault(__webpack_require__(28));
+function _comment(body, token, opts = {}) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { owner, repo } = github_1.context.repo;
-        const { fingerprint } = options;
-        let issueNumber = 0;
-        const octokit = github_1.getOctokit(token);
+        const o = octokit_1.default(body, token, opts);
+        let pullNumber = 0;
         switch (github_1.context.eventName) {
             case 'pull_request': {
-                const prPayload = github_1.context.payload;
-                issueNumber = prPayload.number;
-                core_1.debug(`issueNumber=${issueNumber} from WebhookPayloadPullRequest`);
+                const { number } = github_1.context.payload;
+                pullNumber = number;
+                core_1.debug(`pullNumber=${pullNumber} from WebhookPayloadPullRequest`);
                 break;
             }
             case 'push': {
-                const pushPayload = github_1.context.payload;
-                let page = 1;
-                let hasNext = true;
-                while (hasNext) {
-                    core_1.debug(`pulls.list(state=open, page=${page})`);
-                    const pulls = yield octokit.pulls.list({
-                        owner,
-                        repo,
-                        state: 'open',
-                        page
-                    });
-                    for (const pull of pulls.data) {
-                        if (pull.head.sha === pushPayload.after) {
-                            issueNumber = pull.number;
-                            core_1.debug(`issueNumber=${issueNumber} from pull.url=${pull.url}`);
-                        }
-                        else {
-                            core_1.debug(`Ignoring pull: id=${pull.id}, url=${pull.url}`);
-                        }
-                    }
-                    const { link } = pulls.headers;
-                    core_1.debug(`pulls.list -> headers.link=${link}`);
-                    if (link && link.includes('rel="next"')) {
-                        page++;
-                    }
-                    else {
-                        hasNext = false;
-                    }
-                }
+                const { after } = github_1.context.payload;
+                pullNumber = yield o.getPullNumberByAfter(after);
+                core_1.debug(`pullNumber=${pullNumber} from WebhookPayloadPush`);
                 break;
             }
         }
-        if (issueNumber > 0) {
-            if (fingerprint) {
-                let page = 1;
-                let hasNext = true;
-                while (hasNext) {
-                    core_1.debug(`issues.listComments(issue_number=${issueNumber}, page=${page})`);
-                    const comments = yield octokit.issues.listComments({
-                        owner,
-                        repo,
-                        ['issue_number']: issueNumber,
-                        page
-                    });
-                    for (const comment of comments.data) {
-                        if (comment.body.startsWith(fingerprint)) {
-                            core_1.debug(`issues.updateComment(comment_id=${comment.id})`);
-                            return octokit.issues
-                                .updateComment({
-                                owner,
-                                repo,
-                                ['comment_id']: comment.id,
-                                body: `${comment.body}\n\n${body}`
-                            })
-                                .then(({ data: { url } }) => ({
-                                action: 'updated',
-                                target: 'issue',
-                                url
-                            }));
-                        }
-                        else {
-                            core_1.debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`);
-                        }
-                    }
-                    const { link } = comments.headers;
-                    core_1.debug(`issues.listComments -> headers.link=${link}`);
-                    if (link && link.includes('rel="next"')) {
-                        page++;
-                    }
-                    else {
-                        hasNext = false;
-                    }
-                }
+        if (pullNumber > 0) {
+            const pullComment = yield o.getPullCommentByPrefix(pullNumber);
+            if (pullComment) {
+                const { url } = yield o.appendPullComment(pullComment);
+                return { action: 'updated', target: 'pull', url };
             }
-            core_1.debug(`issues.createComment(issue_number=${issueNumber})`);
-            return octokit.issues
-                .createComment({
-                owner,
-                repo,
-                ['issue_number']: issueNumber,
-                body: (fingerprint ? `${fingerprint}\n\n` : '') + body
-            })
-                .then(({ data: { url } }) => ({ action: 'created', target: 'issue', url }));
+            const { url } = yield o.createPullComment(pullNumber);
+            return { action: 'created', target: 'pull', url };
         }
-        if (fingerprint) {
-            let page = 1;
-            let hasNext = true;
-            while (hasNext) {
-                core_1.debug(`repos.listCommentsForCommit(commit_sha=${github_1.context.sha})`);
-                const comments = yield octokit.repos.listCommentsForCommit({
-                    owner,
-                    repo,
-                    ['commit_sha']: github_1.context.sha,
-                    page
-                });
-                for (const comment of comments.data) {
-                    if (comment.body.startsWith(fingerprint)) {
-                        core_1.debug(`repos.updateCommitComment(comment_id=${comment.id})`);
-                        return octokit.repos
-                            .updateCommitComment({
-                            owner,
-                            repo,
-                            ['comment_id']: comment.id,
-                            body: `${comment.body}\n\n${body}`
-                        })
-                            .then(({ data: { url } }) => ({
-                            action: 'updated',
-                            target: 'commit',
-                            url
-                        }));
-                    }
-                    else {
-                        core_1.debug(`Ignoring comment: id=${comment.id}, url=${comment.url}`);
-                    }
-                }
-                const { link } = comments.headers;
-                core_1.debug(`repos.listCommentsForCommit -> headers.link=${link}`);
-                if (link && link.includes('rel="next"')) {
-                    page++;
-                }
-                else {
-                    hasNext = false;
-                }
-            }
+        const commitComment = yield o.getCommitCommentByPrefix();
+        if (commitComment) {
+            const { url } = yield o.appendCommitComment(commitComment);
+            return { action: 'updated', target: 'commit', url };
         }
-        core_1.debug(`repos.createCommitComment(commit_sha=${github_1.context.sha})`);
-        return octokit.repos
-            .createCommitComment({
-            owner,
-            repo,
-            ['commit_sha']: github_1.context.sha,
-            body: (fingerprint ? `${fingerprint}\n\n` : '') + body
-        })
-            .then(({ data: { url } }) => ({ action: 'created', target: 'commit', url }));
+        const { url } = yield o.createCommitComment();
+        return { action: 'created', target: 'commit', url };
     });
 }
 function run() {

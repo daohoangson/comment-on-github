@@ -15,7 +15,7 @@ outputs:
   action:
     description: Whether the comment has been `created` or `updated`
   target:
-    description: Whether the comment has been made in a `commit` or `issue`
+    description: Whether the comment has been made in a `commit` or `pull`
   url:
     description: The comment URL
 runs:
