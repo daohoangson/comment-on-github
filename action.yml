@@ -15,9 +15,9 @@ outputs:
   action:
     description: Whether the comment has been `created` or `updated`
   target:
-    description: Whether the comment has been made in a `commit` or `issue`
+    description: Whether the comment has been made in a `commit_comment`, `pull_comment` or `release`
   url:
     description: The comment URL
 runs:
   using: node12
-  main: dist/index.js
+  main: dist/index.min.js

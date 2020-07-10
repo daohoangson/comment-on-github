@@ -1,16 +1,19 @@
 name: Test
 
-on: push
+on:
+  push:
+  pull_request:
+  release:
 
 jobs:
   test:
-    if: "!startsWith(github.ref, 'refs/tags/')"
     strategy:
       matrix:
         os:
           - macos-latest
           - ubuntu-latest
           - windows-latest
+      max-parallel: 1
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v1
@@ -20,6 +23,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          body: "${{ matrix.os }} OK"
+          body: "${{ github.event_name }}: ${{ matrix.os }} OK"
           fingerprint: <!-- ${{ github.sha }} -->
       - run: echo action=${{ steps.comment.outputs.action }}, target=${{ steps.comment.outputs.target }}, url=${{ steps.comment.outputs.url }}
