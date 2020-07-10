@@ -458,12 +458,12 @@ const _ = (body, token, opts) => {
             }),
             getByTag: (tag) => __awaiter(void 0, void 0, void 0, function* () {
                 core_1.debug(`repos.getReleaseByTag(tag=${tag})`);
-                const { data } = yield octokit.repos.getReleaseByTag({
-                    owner,
-                    repo,
-                    tag
+                return octokit.repos
+                    .getReleaseByTag({ owner, repo, tag })
+                    .then(({ data }) => data, reason => {
+                    core_1.error(reason);
+                    return undefined;
                 });
-                return data;
             })
         }
     };

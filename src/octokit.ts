@@ -1,4 +1,4 @@
-import {debug} from '@actions/core'
+import {debug, error} from '@actions/core'
 import {context, getOctokit} from '@actions/github'
 
 interface Pull {
@@ -43,7 +43,7 @@ const _ = (
     append: (release: Release) => Promise<Release>
     create: (tagName: string) => Promise<Release>
     getById: (releaseId: number) => Promise<Release>
-    getByTag: (tagName: string) => Promise<Release>
+    getByTag: (tagName: string) => Promise<Release | undefined>
   }
 } => {
   const {fingerprint} = opts
@@ -196,14 +196,15 @@ const _ = (
         return data
       },
 
-      getByTag: async (tag: string): Promise<Release> => {
+      getByTag: async (tag: string): Promise<Release | undefined> => {
         debug(`repos.getReleaseByTag(tag=${tag})`)
-        const {data} = await octokit.repos.getReleaseByTag({
-          owner,
-          repo,
-          tag
-        })
-        return data
+        return octokit.repos.getReleaseByTag({owner, repo, tag}).then(
+          ({data}) => data,
+          reason => {
+            error(reason)
+            return undefined
+          }
+        )
       }
     }
   }
