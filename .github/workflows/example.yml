@@ -24,6 +24,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          body: "${{ matrix.os }} OK"
+          body: "${{ github.event_name }}: ${{ matrix.os }} OK"
           fingerprint: <!-- ${{ github.sha }} -->
       - run: echo action=${{ steps.comment.outputs.action }}, target=${{ steps.comment.outputs.target }}, url=${{ steps.comment.outputs.url }}
