@@ -10,12 +10,14 @@ async function _comment(
   opts: Opts = {}
 ): Promise<{
   action: 'created' | 'updated'
-  target: 'commit' | 'pull'
+  target: 'commit_comment' | 'pull_comment' | 'release'
   url: string
 }> {
   const o = octokit(body, token, opts)
 
   let pullNumber = 0
+  let releaseId = 0
+  let tagName: string | undefined
   switch (context.eventName) {
     case 'pull_request': {
       const {number} = context.payload as Webhooks.WebhookPayloadPullRequest
@@ -24,32 +26,56 @@ async function _comment(
       break
     }
     case 'push': {
-      const {after} = context.payload as Webhooks.WebhookPayloadPush
-      pullNumber = await o.getPullNumberByAfter(after)
+      const {after, ref} = context.payload as Webhooks.WebhookPayloadPush
+      if (ref.startsWith('refs/tags/')) {
+        tagName = ref.substr(10)
+      }
+      pullNumber = await o.pull.getNumberByAfter(after)
       debug(`pullNumber=${pullNumber} from WebhookPayloadPush`)
+      break
+    }
+    case 'release': {
+      const {
+        release: {id, tag_name: releaseTagName}
+      } = context.payload as Webhooks.WebhookPayloadRelease
+      releaseId = id
+      tagName = releaseTagName
       break
     }
   }
 
-  if (pullNumber > 0) {
-    const pullComment = await o.getPullCommentByPrefix(pullNumber)
-    if (pullComment) {
-      const {url} = await o.appendPullComment(pullComment)
-      return {action: 'updated', target: 'pull', url}
+  if (tagName) {
+    const release = releaseId
+      ? await o.release.getById(releaseId)
+      : await o.release.getByTag(tagName)
+    if (release) {
+      const {url} = await o.release.append(release)
+      return {action: 'updated', target: 'release', url}
     }
 
-    const {url} = await o.createPullComment(pullNumber)
-    return {action: 'created', target: 'pull', url}
+    const {url} = await o.release.create(tagName)
+    return {action: 'created', target: 'release', url}
   }
 
-  const commitComment = await o.getCommitCommentByPrefix()
+  if (pullNumber > 0) {
+    const pullComment = await o.pull.getCommentByPrefix(pullNumber)
+    if (pullComment) {
+      const {url} = await o.pull.appendComment(pullComment)
+      return {action: 'updated', target: 'pull_comment', url}
+    }
+
+    const {url} = await o.pull.createComment(pullNumber)
+    return {action: 'created', target: 'pull_comment', url}
+  }
+
+  const commitComment = await o.commit.getCommentByPrefix()
   if (commitComment) {
-    const {url} = await o.appendCommitComment(commitComment)
-    return {action: 'updated', target: 'commit', url}
+    const {url} = await o.commit.appendComment(commitComment)
+    return {action: 'updated', target: 'commit_comment', url}
   }
 
-  const {url} = await o.createCommitComment()
-  return {action: 'created', target: 'commit', url}
+  const {url} = await o.commit.createComment()
+  return {action: 'created', target: 'commit_comment', url}
 }
 
 async function run(): Promise<void> {

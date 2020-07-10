@@ -8,7 +8,7 @@ This is a fork of https://github.com/unsplash/comment-on-pr.
 - Runs on Ubuntu, macOS and Windows virtual environments.
 - Requires the `GITHUB_TOKEN` secret.
 - Requires the comment's body in the `body` parameter.
-- Supports `push` and `pull_request` event types.
+- Supports `push`, `pull_request` and `release` event types.
 
 ### Sample workflow
 
