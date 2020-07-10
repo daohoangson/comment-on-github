@@ -11,6 +11,7 @@ jobs:
           - macos-latest
           - ubuntu-latest
           - windows-latest
+      max-parallel: 1
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v1
