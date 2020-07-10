@@ -7,7 +7,6 @@ on:
 
 jobs:
   test:
-    if: "!startsWith(github.ref, 'refs/tags/')"
     strategy:
       matrix:
         os:
