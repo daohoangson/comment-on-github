@@ -21,6 +21,7 @@ interface Release {
 
 export interface Opts {
   fingerprint?: string
+  replace?: string
 }
 
 const _ = (
@@ -29,12 +30,12 @@ const _ = (
   opts: Opts
 ): {
   commit: {
-    appendComment: (comment: Comment) => Promise<Comment>
+    appendOrReplaceComment: (comment: Comment) => Promise<Comment>
     createComment: () => Promise<Comment>
     getCommentByPrefix: () => Promise<Comment | undefined>
   }
   pull: {
-    appendComment: (comment: Comment) => Promise<Comment>
+    appendOrReplaceComment: (comment: Comment) => Promise<Comment>
     createComment: (pullNumber: number) => Promise<Comment>
     getCommentByPrefix: (pullNumber: number) => Promise<Comment | undefined>
     getNumberByAfter: (after: string) => Promise<number>
@@ -46,20 +47,21 @@ const _ = (
     getByTag: (tagName: string) => Promise<Release | undefined>
   }
 } => {
-  const {fingerprint} = opts
+  const {fingerprint, replace} = opts
   const octokit = getOctokit(token)
   const {owner, repo} = context.repo
   const {sha} = context
+  const bodyWithFingerprint = (fingerprint ? `${fingerprint}\n\n` : '') + body
 
   return {
     commit: {
-      appendComment: async (comment: Comment): Promise<Comment> => {
+      appendOrReplaceComment: async (comment: Comment): Promise<Comment> => {
         debug(`repos.updateCommitComment(comment_id=${comment.id})`)
         const {data} = await octokit.repos.updateCommitComment({
           owner,
           repo,
           ['comment_id']: comment.id,
-          body: `${comment.body}\n\n${body}`
+          body: replace ? bodyWithFingerprint : `${comment.body}\n\n${body}`
         })
         return data
       },
@@ -70,7 +72,7 @@ const _ = (
           owner,
           repo,
           ['commit_sha']: sha,
-          body: (fingerprint ? `${fingerprint}\n\n` : '') + body
+          body: bodyWithFingerprint
         })
         return data
       },
@@ -97,13 +99,13 @@ const _ = (
       }
     },
     pull: {
-      appendComment: async (comment: Comment): Promise<Comment> => {
+      appendOrReplaceComment: async (comment: Comment): Promise<Comment> => {
         debug(`issues.updateComment(comment_id=${comment.id})`)
         const {data} = await octokit.issues.updateComment({
           owner,
           repo,
           ['comment_id']: comment.id,
-          body: `${comment.body}\n\n${body}`
+          body: replace ? bodyWithFingerprint : `${comment.body}\n\n${body}`
         })
         return data
       },
@@ -114,7 +116,7 @@ const _ = (
           owner,
           repo,
           ['issue_number']: pullNumber,
-          body: (fingerprint ? `${fingerprint}\n\n` : '') + body
+          body: bodyWithFingerprint
         })
         return data
       },

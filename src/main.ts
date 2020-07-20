@@ -60,7 +60,7 @@ async function _comment(
   if (pullNumber > 0) {
     const pullComment = await o.pull.getCommentByPrefix(pullNumber)
     if (pullComment) {
-      const {url} = await o.pull.appendComment(pullComment)
+      const {url} = await o.pull.appendOrReplaceComment(pullComment)
       return {action: 'updated', target: 'pull_comment', url}
     }
 
@@ -70,7 +70,7 @@ async function _comment(
 
   const commitComment = await o.commit.getCommentByPrefix()
   if (commitComment) {
-    const {url} = await o.commit.appendComment(commitComment)
+    const {url} = await o.commit.appendOrReplaceComment(commitComment)
     return {action: 'updated', target: 'commit_comment', url}
   }
 
@@ -92,7 +92,8 @@ async function run(): Promise<void> {
   }
 
   await _comment(body, token, {
-    fingerprint: getInput('fingerprint')
+    fingerprint: getInput('fingerprint'),
+    replace: getInput('replace')
   }).then(
     ({action, target, url}) => {
       setOutput('action', action)
