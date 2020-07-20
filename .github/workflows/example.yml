@@ -1,0 +1,43 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  release:
+
+jobs:
+  macos_ubuntu:
+    name: 'macOS and Ubuntu (append)'
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+      max-parallel: 1
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v1
+      - name: Test on ${{ matrix.os }}
+        id: comment
+        uses: ./
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body: "${{ github.event_name }}@${{ github.sha }} ${{ matrix.os }} OK"
+          fingerprint: <!-- ${{ github.sha }} -->
+      - run: echo action=${{ steps.comment.outputs.action }}, target=${{ steps.comment.outputs.target }}, url=${{ steps.comment.outputs.url }}
+  windows:
+    name: 'Windows (replace)'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Test on windows
+        id: comment
+        uses: ./
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          body: "${{ github.event_name }}@${{ github.sha }} windows OK"
+          fingerprint: <!-- windows -->
+          replace: please
+      - run: echo action=${{ steps.comment.outputs.action }}, target=${{ steps.comment.outputs.target }}, url=${{ steps.comment.outputs.url }}
