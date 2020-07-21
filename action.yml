@@ -11,6 +11,9 @@ inputs:
   fingerprint:
     description: The text that will be appended to `body` and used to auto-merge comments
     required: false
+  replace:
+    description: Whether the comment should be replaced instead of being appended on fingerprint match
+    required: false
 outputs:
   action:
     description: Whether the comment has been `created` or `updated`
