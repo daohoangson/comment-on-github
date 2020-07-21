@@ -31,4 +31,5 @@ jobs:
         with:
           body: "Check out this comment!"
           fingerprint: <!-- ${{ github.sha }} --> # optional, will be appended to `body` and used to auto-merge comments
+          replace: please # optional, comment will be replaced on fingerprint match instead of being appended
 ```
