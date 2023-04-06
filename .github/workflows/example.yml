@@ -23,7 +23,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          body: "${{ github.event_name }} ${{ github.sha }} ${{ matrix.os }} OK"
+          body: "${{ github.event_name }} ${{ github.sha }} ${{ matrix.os }} OK 20230406"
           fingerprint: <!-- ${{ github.sha }} -->
       - run: echo action=${{ steps.comment.outputs.action }}, target=${{ steps.comment.outputs.target }}, url=${{ steps.comment.outputs.url }}
   windows:
@@ -37,7 +37,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          body: "${{ github.event_name }} ${{ github.sha }} windows-latest OK"
+          body: "${{ github.event_name }} ${{ github.sha }} windows-latest OK 20230406"
           fingerprint: <!-- windows -->
           replace: please
       - run: echo action=${{ steps.comment.outputs.action }}, target=${{ steps.comment.outputs.target }}, url=${{ steps.comment.outputs.url }}
