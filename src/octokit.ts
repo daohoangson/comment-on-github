@@ -1,5 +1,6 @@
 import {debug, error} from '@actions/core'
 import {context, getOctokit} from '@actions/github'
+import {serializeError} from 'serialize-error'
 
 interface Pull {
   head: {sha: string}
@@ -9,19 +10,40 @@ interface Pull {
 
 interface Comment {
   id: number
-  body: string
+  body?: string
   url: string
 }
 
 interface Release {
   id: number
-  body: string
+  body?: string | null
   url: string
 }
 
 export interface Opts {
   fingerprint?: string
   replace?: string
+}
+
+function getCommentByPrefix(
+  comments: Comment[],
+  prefix: string
+): Comment | undefined {
+  for (const comment of comments) {
+    const {body, url} = comment
+    if (typeof body === 'string') {
+      if (body.startsWith(prefix)) {
+        debug(`Found comment ${url}`)
+        return comment
+      } else {
+        debug(`Ignoring comment ${url}`)
+      }
+    } else {
+      error(
+        `Comment body is not a string: url=${url} body=${body} typeof body=${typeof body}`
+      )
+    }
+  }
 }
 
 const _ = (
@@ -57,7 +79,7 @@ const _ = (
     commit: {
       appendOrReplaceComment: async (comment: Comment): Promise<Comment> => {
         debug(`repos.updateCommitComment(comment_id=${comment.id})`)
-        const {data} = await octokit.repos.updateCommitComment({
+        const {data} = await octokit.rest.repos.updateCommitComment({
           owner,
           repo,
           ['comment_id']: comment.id,
@@ -68,7 +90,7 @@ const _ = (
 
       createComment: async (): Promise<Comment> => {
         debug(`repos.createCommitComment(commit_sha=${sha})`)
-        const {data} = await octokit.repos.createCommitComment({
+        const {data} = await octokit.rest.repos.createCommitComment({
           owner,
           repo,
           ['commit_sha']: sha,
@@ -80,28 +102,22 @@ const _ = (
       getCommentByPrefix: async (): Promise<Comment | undefined> => {
         if (!fingerprint) return
 
-        const options = octokit.repos.listCommentsForCommit.endpoint.merge({
-          owner,
-          repo,
-          ['commit_sha']: sha
-        })
+        const options = octokit.rest.repos.listCommentsForCommit.endpoint.merge(
+          {
+            owner,
+            repo,
+            ['commit_sha']: sha
+          }
+        )
         debug(`repos.listCommentsForCommit(commit_sha=${sha})`)
         const comments: Comment[] = await octokit.paginate(options)
-
-        for (const comment of comments) {
-          if (comment.body.startsWith(fingerprint)) {
-            debug(`Found commit comment ${comment.url}`)
-            return comment
-          } else {
-            debug(`Ignoring commit comment ${comment.url}`)
-          }
-        }
+        return getCommentByPrefix(comments, fingerprint)
       }
     },
     pull: {
       appendOrReplaceComment: async (comment: Comment): Promise<Comment> => {
         debug(`issues.updateComment(comment_id=${comment.id})`)
-        const {data} = await octokit.issues.updateComment({
+        const {data} = await octokit.rest.issues.updateComment({
           owner,
           repo,
           ['comment_id']: comment.id,
@@ -112,7 +128,7 @@ const _ = (
 
       createComment: async (pullNumber: number): Promise<Comment> => {
         debug(`issues.createComment(issue_number=${pullNumber})`)
-        const {data} = await octokit.issues.createComment({
+        const {data} = await octokit.rest.issues.createComment({
           owner,
           repo,
           ['issue_number']: pullNumber,
@@ -126,26 +142,18 @@ const _ = (
       ): Promise<Comment | undefined> => {
         if (!fingerprint) return
 
-        const options = octokit.issues.listComments.endpoint.merge({
+        const options = octokit.rest.issues.listComments.endpoint.merge({
           owner,
           repo,
           ['issue_number']: pullNumber
         })
         debug(`issues.listComments(issue_number=${pullNumber})`)
         const comments: Comment[] = await octokit.paginate(options)
-
-        for (const comment of comments) {
-          if (comment.body.startsWith(fingerprint)) {
-            debug(`Found pull comment ${comment.url}`)
-            return comment
-          } else {
-            debug(`Ignoring pull comment ${comment.url}`)
-          }
-        }
+        return getCommentByPrefix(comments, fingerprint)
       },
 
       getNumberByAfter: async (after: string): Promise<number> => {
-        const options = octokit.pulls.list.endpoint.merge({
+        const options = octokit.rest.pulls.list.endpoint.merge({
           owner,
           repo,
           state: 'open'
@@ -168,7 +176,7 @@ const _ = (
     release: {
       append: async (release: Release): Promise<Release> => {
         debug(`repos.updateRelease(release_id=${release.id})`)
-        const {data} = await octokit.repos.updateRelease({
+        const {data} = await octokit.rest.repos.updateRelease({
           owner,
           repo,
           ['release_id']: release.id,
@@ -179,7 +187,7 @@ const _ = (
 
       create: async (tagName: string): Promise<Release> => {
         debug(`repos.createRelease(tag_name=${tagName})`)
-        const {data} = await octokit.repos.createRelease({
+        const {data} = await octokit.rest.repos.createRelease({
           owner,
           repo,
           ['tag_name']: tagName,
@@ -190,7 +198,7 @@ const _ = (
 
       getById: async (releaseId: number): Promise<Release> => {
         debug(`repos.getRelease(release_id=${releaseId})`)
-        const {data} = await octokit.repos.getRelease({
+        const {data} = await octokit.rest.repos.getRelease({
           owner,
           repo,
           ['release_id']: releaseId
@@ -200,13 +208,21 @@ const _ = (
 
       getByTag: async (tag: string): Promise<Release | undefined> => {
         debug(`repos.getReleaseByTag(tag=${tag})`)
-        return octokit.repos.getReleaseByTag({owner, repo, tag}).then(
-          ({data}) => data,
-          reason => {
+        try {
+          const {data} = await octokit.rest.repos.getReleaseByTag({
+            owner,
+            repo,
+            tag
+          })
+          return data
+        } catch (reason) {
+          if (reason instanceof Error) {
             error(reason)
-            return undefined
+          } else {
+            error(JSON.stringify(serializeError(reason)))
           }
-        )
+          return undefined
+        }
       }
     }
   }

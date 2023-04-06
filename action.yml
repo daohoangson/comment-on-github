@@ -5,7 +5,7 @@ branding:
   icon: message-square
   color: blue
 inputs:
-  body: 
+  body:
     description: Comment body
     required: true
   fingerprint:
@@ -22,5 +22,5 @@ outputs:
   url:
     description: The comment URL
 runs:
-  using: node12
+  using: node16
   main: dist/index.min.js

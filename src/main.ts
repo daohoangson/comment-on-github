@@ -1,8 +1,13 @@
 import {debug, getInput, setFailed, setOutput} from '@actions/core'
 import {context} from '@actions/github'
-import Webhooks from '@octokit/webhooks'
 
 import octokit, {Opts} from './octokit'
+import type {
+  PullRequestEvent,
+  PushEvent,
+  ReleaseEvent
+} from '@octokit/webhooks-types'
+import {serializeError} from 'serialize-error'
 
 async function _comment(
   body: string,
@@ -20,24 +25,24 @@ async function _comment(
   let tagName: string | undefined
   switch (context.eventName) {
     case 'pull_request': {
-      const {number} = context.payload as Webhooks.WebhookPayloadPullRequest
+      const {number} = context.payload as PullRequestEvent
       pullNumber = number
-      debug(`pullNumber=${pullNumber} from WebhookPayloadPullRequest`)
+      debug(`pullNumber=${pullNumber} from PullRequestEvent`)
       break
     }
     case 'push': {
-      const {after, ref} = context.payload as Webhooks.WebhookPayloadPush
+      const {after, ref} = context.payload as PushEvent
       if (ref.startsWith('refs/tags/')) {
-        tagName = ref.substr(10)
+        tagName = ref.substring(10)
       }
       pullNumber = await o.pull.getNumberByAfter(after)
-      debug(`pullNumber=${pullNumber} from WebhookPayloadPush`)
+      debug(`pullNumber=${pullNumber} from PushEvent`)
       break
     }
     case 'release': {
       const {
         release: {id, tag_name: releaseTagName}
-      } = context.payload as Webhooks.WebhookPayloadRelease
+      } = context.payload as ReleaseEvent
       releaseId = id
       tagName = releaseTagName
       break
@@ -91,17 +96,22 @@ async function run(): Promise<void> {
     return
   }
 
-  await _comment(body, token, {
-    fingerprint: getInput('fingerprint'),
-    replace: getInput('replace')
-  }).then(
-    ({action, target, url}) => {
-      setOutput('action', action)
-      setOutput('target', target)
-      setOutput('url', url)
-    },
-    error => setFailed(error)
-  )
+  try {
+    const {action, target, url} = await _comment(body, token, {
+      fingerprint: getInput('fingerprint'),
+      replace: getInput('replace')
+    })
+
+    setOutput('action', action)
+    setOutput('target', target)
+    setOutput('url', url)
+  } catch (reason) {
+    if (reason instanceof Error) {
+      setFailed(reason)
+    } else {
+      setFailed(JSON.stringify(serializeError(reason)))
+    }
+  }
 }
 
 run()
