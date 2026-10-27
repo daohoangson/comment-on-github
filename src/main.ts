@@ -1,7 +1,9 @@
 import {debug, getInput, setFailed, setOutput} from '@actions/core'
 import {context} from '@actions/github'
 
-import octokit, {Opts} from './octokit'
+// The .js extension is required by Node for the compiled module.
+// eslint-disable-next-line import/no-unresolved
+import octokit, {Opts} from './octokit.js'
 import type {
   PullRequestEvent,
   PushEvent,

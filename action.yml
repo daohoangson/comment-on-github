@@ -22,5 +22,5 @@ outputs:
   url:
     description: The comment URL
 runs:
-  using: node16
+  using: node24
   main: dist/index.min.js
