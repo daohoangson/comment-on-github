@@ -1,6 +1,5 @@
 import {debug, error} from '@actions/core'
 import {context, getOctokit} from '@actions/github'
-import {serializeError} from 'serialize-error'
 
 interface Pull {
   head: {sha: string}
@@ -216,12 +215,15 @@ const _ = (
           })
           return data
         } catch (reason) {
-          if (reason instanceof Error) {
-            error(reason)
-          } else {
-            error(JSON.stringify(serializeError(reason)))
+          if (
+            typeof reason === 'object' &&
+            reason !== null &&
+            'status' in reason &&
+            reason.status === 404
+          ) {
+            return undefined
           }
-          return undefined
+          throw reason
         }
       }
     }
